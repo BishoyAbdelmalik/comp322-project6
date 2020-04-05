@@ -1,3 +1,296 @@
+Script started on Sun 05 Apr 2020 01:02:27 PM PDT
+$  cat name
 Project 6
 Bishoy Abdelmalik
 COMP 322 2:00PM 
+$  cat mywc.c
+#include <stdio.h>
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+void error_exit(char *s);
+void countFile(char *fileName, int pipe[]);
+int readpipe(int mypipe[]);
+void writeToPipe(int mypipe[]);
+void countSTDIN();
+int totalCountWords = 0;
+int totalCountLines = 0;
+int totalCountChars = 0;
+int countWords = 0;
+int countLines = 0;
+int countChars = 0;
+int fileNameLocation = -1;
+bool spaceFound = false;
+bool printLines = false;
+bool printChar = false;
+bool printWord = false;
+void print(char *fileName, int PID)
+{
+    printf("  ");
+    totalCountLines += countLines;
+    totalCountWords += countWords;
+    totalCountChars += countChars;
+    if (printLines)
+    {
+        printf("%10d", countLines);
+    }
+    if (printWord)
+    {
+        printf("%10d", countWords);
+    }
+    if (printChar)
+    {
+        printf("%10d", countChars);
+    }
+    if (fileName)
+    {
+        printf(" %5s", fileName);
+    }
+    printf(" PID: %d", PID);
+    printf("\n");
+}
+void printTotal()
+{
+    printf("  ");
+    if (printLines)
+    {
+        printf("%10d", totalCountLines);
+    }
+
+    if (printWord)
+    {
+        printf("%10d", totalCountWords);
+    }
+    if (printChar)
+    {
+        printf("%10d", totalCountChars);
+    }
+
+    printf(" %5s", "Total");
+
+    printf("\n");
+}
+void count(char character)
+{
+    if (character != EOF)
+    {
+        totalCountChars++;
+        countChars++;
+    }
+
+    if (character == '\n')
+    {
+        totalCountLines++;
+        countLines++;
+    }
+    if (isspace(character))
+    {
+        spaceFound = true;
+    }
+    if (spaceFound && !isspace(character))
+    {
+        totalCountWords++;
+        countWords++;
+        spaceFound = false;
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    bool noOptions = true;
+    bool filePassed = false;
+    int i;
+    for ( i = 1; argc >= 2 && i < argc; i++)
+    {
+        char character = argv[i][0];
+        if (character != '-')
+        {
+            filePassed = true;
+        }
+
+        if (character == '-')
+        {
+            noOptions = false;
+            int j;
+            for (j = 1; argv[i][j] != 0; j++)
+            {
+                switch (argv[i][j])
+                {
+                case 'l':
+                    printLines = true;
+                    break;
+                case 'w':
+                    printWord = true;
+                    break;
+                case 'c':
+                    printChar = true;
+                    break;
+
+                default:
+                    break;
+                }
+            }
+        }
+        else
+        {
+            if (noOptions)
+            {
+                noOptions = true;
+            }
+        }
+    }
+    if (noOptions)
+    {
+        printLines = true;
+        printChar = true;
+        printWord = true;
+    }
+
+    if (argc >= 2 && filePassed)
+    {
+        int countFiles = 0;
+        int i;
+        for ( i = 1; i < argc; i++)
+        {
+            countWords = 0, countLines = 0, countChars = 0;
+            char firstChar = argv[i][0];
+            if (firstChar != '-')
+            {
+                countFiles++;
+
+                int mypipe[2];
+                if (pipe(mypipe) == -1)
+                {
+                    error_exit("pipe() failed");
+                }
+                int forkValue;
+                if ((forkValue = fork()) == 0)
+                {
+                    close(mypipe[0]); // close read
+                    countFile(argv[i], mypipe);
+                    return 0;
+                }
+                if (forkValue > 0)
+                {
+
+                    int PID = readpipe(mypipe);
+                    print(argv[i], PID);
+                }
+            }
+        }
+        if (countFiles > 1)
+        {
+            printTotal();
+        }
+    }
+    else
+    {
+        countWords = 0, countLines = 0, countChars = 0;
+        int mypipe[2];
+        if (pipe(mypipe) == -1)
+        {
+            error_exit("pipe() failed");
+        }
+        int forkValue;
+        if ((forkValue = fork()) == 0)
+        {
+            close(mypipe[0]); // close read
+            countSTDIN();
+            writeToPipe(mypipe);
+            return 0;
+        }
+        if (forkValue > 0)
+        {
+
+            int PID = readpipe(mypipe);
+            print(0, PID);
+        }
+    }
+
+    return 1;
+}
+void countSTDIN()
+{
+    char character = getchar();
+    if (!isspace(character) || isprint(character))
+    {
+        countWords++;
+    }
+
+    while (character != EOF)
+    {
+        count(character);
+        character = getchar();
+    }
+}
+void countFile(char *fileName, int mypipe[])
+{
+    FILE *file;
+
+    file = fopen(fileName, "r");
+    if (file == NULL)
+    {
+        error_exit("can't open file or file not found");
+    }
+
+    char character;
+
+    while (!feof(file))
+    {
+
+        character = fgetc(file);
+        count(character);
+    }
+
+    fclose(file);
+    writeToPipe(mypipe);
+}
+void writeToPipe(int mypipe[])
+{
+    int values[3] = {countWords, countLines, countChars};
+    if (write(mypipe[1], values, sizeof(values)) == -1)
+    {
+        error_exit("write() failed");
+    }
+    close(mypipe[1]); // close write
+}
+int readpipe(int mypipe[])
+{
+    close(mypipe[1]); // close write
+    // Wait for child to send a string
+    int PID = wait(NULL);
+    int values[3];
+    if (read(mypipe[0], values, sizeof(values)) == -1)
+    {
+        error_exit("read() failed");
+    }
+    countWords = values[0];
+    countLines = values[1];
+    countChars = values[2];
+
+    return PID;
+}
+
+void error_exit(char *s)
+{
+    fprintf(stderr, "\nERROR: %s - bye!\n", s);
+    exit(EXIT_FAILURE);
+}$  gcc -o mywc mywc.c
+$  ./mywc mywc.c example.c
+         273       589      5866 mywc.c PID: 2418
+          55       143       991 example.c PID: 2419
+         328       732      6857 Total
+$   ./mywc mywc.c example.c name
+         273       589      5866 mywc.c PID: 2425
+          55       143       991 example.c PID: 2426
+           3         7        45  name PID: 2427
+         331       739      6902 Total
+$   ./mywc < mywc.c
+         273       590      5866 PID: 2435
+$    ./mywc  mywc.c
+         273       589      5866 mywc.c PID: 2440
+$ exit
+
+Script done on Sun 05 Apr 2020 01:03:01 PM PDT
