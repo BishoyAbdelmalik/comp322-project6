@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void error_exit(char *s);
+
 int totalCountWords = 0;
 int totalCountLines = 0;
 int totalCountChars = 0;
@@ -188,4 +193,12 @@ int main(int argc, char *argv[])
     }
 
     return 1;
+}
+
+
+
+void error_exit(char *s)
+{
+  fprintf(stderr, "\nERROR: %s - bye!\n", s);
+  exit(1);
 }
