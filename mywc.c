@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include<sys/wait.h> 
+#include <sys/wait.h>
 void error_exit(char *s);
 void countFile(char *fileName, int pipe[]);
 int readpipe(int mypipe[]);
@@ -21,9 +21,9 @@ bool printWord = false;
 void print(char *fileName, int PID)
 {
     printf("  ");
-    totalCountLines+=countLines;
-    totalCountWords+=countWords;
-    totalCountChars+=countChars;
+    totalCountLines += countLines;
+    totalCountWords += countWords;
+    totalCountChars += countChars;
     if (printLines)
     {
         printf("%10d", countLines);
@@ -40,7 +40,7 @@ void print(char *fileName, int PID)
     {
         printf(" %5s", fileName);
     }
-    printf(" PID: %d",PID);
+    printf(" PID: %d", PID);
     printf("\n");
 }
 void printTotal()
@@ -59,8 +59,6 @@ void printTotal()
     {
         printf("%10d", totalCountChars);
     }
-
-   
 
     printf(" %5s", "Total");
 
@@ -146,7 +144,7 @@ int main(int argc, char *argv[])
         int countFiles = 0;
         for (int i = 1; i < argc; i++)
         {
-
+            countWords = 0, countLines = 0, countChars = 0;
             char firstChar = argv[i][0];
             if (firstChar != '-')
             {
@@ -160,15 +158,15 @@ int main(int argc, char *argv[])
                 int forkValue;
                 if ((forkValue = fork()) == 0)
                 {
-                    close(mypipe[0]);// close read
+                    close(mypipe[0]); // close read
                     countFile(argv[i], mypipe);
                     return 0;
                 }
                 if (forkValue > 0)
                 {
 
-                    int PID=readpipe(mypipe);
-                    print(argv[i],PID);
+                    int PID = readpipe(mypipe);
+                    print(argv[i], PID);
                 }
             }
         }
@@ -191,7 +189,7 @@ int main(int argc, char *argv[])
             character = getchar();
         }
 
-        print(0,0);//fornow
+        print(0, 0); //fornow
     }
 
     return 1;
@@ -213,31 +211,28 @@ void countFile(char *fileName, int mypipe[])
 
     fclose(file);
     int values[3] = {countWords, countLines, countChars};
-    if (write(mypipe[1], values, sizeof(values) ) == -1)
+    if (write(mypipe[1], values, sizeof(values)) == -1)
     {
         error_exit("write() failed");
     }
-    close(mypipe[1]);// close write
-    
+    close(mypipe[1]); // close write
 }
 int readpipe(int mypipe[])
 {
-    close(mypipe[1]);// close write
-  
-    // Wait for child to send a string 
-    int PID=wait(NULL);
+    close(mypipe[1]); // close write
+
+    // Wait for child to send a string
+    int PID = wait(NULL);
     int values[3];
-    if (read(mypipe[0], values, sizeof(values) ) == -1)
+    if (read(mypipe[0], values, sizeof(values)) == -1)
     {
         error_exit("read() failed");
     }
     countWords = values[0];
     countLines = values[1];
     countChars = values[2];
-       
-    close(mypipe[0]);// close read
-    return PID;
 
+    return PID;
 }
 
 void error_exit(char *s)
