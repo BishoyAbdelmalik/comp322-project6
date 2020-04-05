@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
-
 void error_exit(char *s);
+void countFile(char *fileName);
 
 int totalCountWords = 0;
 int totalCountLines = 0;
@@ -17,7 +17,7 @@ bool spaceFound = false;
 bool printLines = false;
 bool printChar = false;
 bool printWord = false;
-void print(char *argv[])
+void print(char *fileName)
 {
     printf("  ");
     if (printLines)
@@ -34,10 +34,10 @@ void print(char *argv[])
         printf("%5d", countChars);
     }
 
-    if (fileNameLocation != -1)
+    if (fileName)
     {
 
-        printf(" %5s", argv[fileNameLocation]);
+        printf(" %5s", fileName);
     }
     printf("\n");
 }
@@ -146,34 +146,19 @@ int main(int argc, char *argv[])
         for (int i = 1; i < argc; i++)
         {
 
-            FILE *file;
-            char getArgFirstChar = argv[i][0];
-            if (getArgFirstChar != '-')
+            char firstChar = argv[i][0];
+            if (firstChar != '-')
             {
+
                 countFiles++;
-                file = fopen(argv[i], "r");
-                char character;
-                fileNameLocation = i;
+                countFile(argv[i]);
 
-                while (!feof(file))
-                {
-
-                    character = fgetc(file);
-                    count(character);
-                }
-
-                fclose(file);
-                print(argv);
-                countWords = 0;
-                countLines = 0;
-                countChars = 0;
             }
         }
-        if (countFiles>1)
+        if (countFiles > 1)
         {
             printTotal();
         }
-        
     }
     else
     {
@@ -189,16 +174,35 @@ int main(int argc, char *argv[])
             character = getchar();
         }
 
-        print(argv);
+        print(0);
     }
 
     return 1;
 }
 
+void countFile(char *fileName)
+{
+    FILE *file;
 
+    file = fopen(fileName, "r");
+    char character;
+
+    while (!feof(file))
+    {
+
+        character = fgetc(file);
+        count(character);
+    }
+
+    fclose(file);
+    print(fileName);
+    countWords = 0;
+    countLines = 0;
+    countChars = 0;
+}
 
 void error_exit(char *s)
 {
-  fprintf(stderr, "\nERROR: %s - bye!\n", s);
-  exit(1);
+    fprintf(stderr, "\nERROR: %s - bye!\n", s);
+    exit(1);
 }
