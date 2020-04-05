@@ -40,7 +40,7 @@ void print(char *fileName, int PID)
     {
         printf(" %5s", fileName);
     }
-    printf(" %d",PID);
+    printf(" PID: %d",PID);
     printf("\n");
 }
 void printTotal()
@@ -166,7 +166,6 @@ int main(int argc, char *argv[])
                 }
                 if (forkValue > 0)
                 {
-                    printf("parent Child PID %d\n",forkValue);
 
                     int PID=readpipe(mypipe);
                     print(argv[i],PID);
