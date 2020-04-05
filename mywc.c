@@ -7,6 +7,8 @@
 void error_exit(char *s);
 void countFile(char *fileName, int pipe[]);
 int readpipe(int mypipe[]);
+void writeToPipe(int mypipe[]);
+void countSTDIN();
 int totalCountWords = 0;
 int totalCountLines = 0;
 int totalCountChars = 0;
@@ -177,24 +179,44 @@ int main(int argc, char *argv[])
     }
     else
     {
-        char character = getchar();
-        if (!isspace(character) || isprint(character))
+        countWords = 0, countLines = 0, countChars = 0;
+        int mypipe[2];
+        if (pipe(mypipe) == -1)
         {
-            countWords++;
+            error_exit("pipe() failed");
         }
-
-        while (character != EOF)
+        int forkValue;
+        if ((forkValue = fork()) == 0)
         {
-            count(character);
-            character = getchar();
+            close(mypipe[0]); // close read
+            countSTDIN();
+            writeToPipe(mypipe);
+            return 0;
         }
+        if (forkValue > 0)
+        {
 
-        print(0, 0); //fornow
+            int PID = readpipe(mypipe);
+            print(0, PID);
+        }
     }
 
     return 1;
 }
+void countSTDIN()
+{
+    char character = getchar();
+    if (!isspace(character) || isprint(character))
+    {
+        countWords++;
+    }
 
+    while (character != EOF)
+    {
+        count(character);
+        character = getchar();
+    }
+}
 void countFile(char *fileName, int mypipe[])
 {
     FILE *file;
@@ -215,6 +237,10 @@ void countFile(char *fileName, int mypipe[])
     }
 
     fclose(file);
+    writeToPipe(mypipe);
+}
+void writeToPipe(int mypipe[])
+{
     int values[3] = {countWords, countLines, countChars};
     if (write(mypipe[1], values, sizeof(values)) == -1)
     {
