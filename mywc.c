@@ -200,6 +200,11 @@ void countFile(char *fileName, int mypipe[])
     FILE *file;
 
     file = fopen(fileName, "r");
+    if (file == NULL)
+    {
+        error_exit("can't open file or file not found");
+    }
+
     char character;
 
     while (!feof(file))
