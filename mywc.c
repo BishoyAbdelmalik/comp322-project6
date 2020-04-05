@@ -225,7 +225,6 @@ void countFile(char *fileName, int mypipe[])
 int readpipe(int mypipe[])
 {
     close(mypipe[1]); // close write
-
     // Wait for child to send a string
     int PID = wait(NULL);
     int values[3];
@@ -243,5 +242,5 @@ int readpipe(int mypipe[])
 void error_exit(char *s)
 {
     fprintf(stderr, "\nERROR: %s - bye!\n", s);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
